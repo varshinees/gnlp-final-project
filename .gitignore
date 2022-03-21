@@ -127,3 +127,14 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+*.code-workspace
+vqacp_v2_test_annotations.json
+annotations/annotations_trainval2014.zip
+annotations/coco/captions_train2014.json
+annotations/coco/captions_val2014.json
+annotations/coco/instances_train2014.json
+annotations/coco/instances_val2014.json
+annotations/coco/person_keypoints_train2014.json
+annotations/coco/person_keypoints_val2014.json
+annotations/.DS_Store
+*.jpg
