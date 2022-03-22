@@ -52,7 +52,7 @@ Does not sort since we only need to do this once
 def retrieve_questions(img_ids, questions):
     selected_questions = []
     for i in range(len(questions)):
-        if any(img == questions['image_id'] for img in img_ids):
+        if any(img == questions[i]['image_id'] for img in img_ids):
             # we've picked this question, store it
             selected_questions.append(questions[i])
 
@@ -72,8 +72,8 @@ def retrieve_annotations(selected_questions):
 
     selected_annotations = []
     for i in range(len(annotations)):
-        if any(selected_questions[i]['question_id'] == annotations['question_id'] 
-                for i in range(len(selected_questions))):
+        if any(selected_questions[j]['question_id'] == annotations[i]['question_id'] 
+                for j in range(len(selected_questions))):
             # we've picked this question, store it
             selected_annotations.append(annotations[i])
 
@@ -116,7 +116,7 @@ if __name__ == "__main__":
     print("IDS", img_ids)
     print("SPLITS", img_splits)
 
-    selected_qs = retrieve_questions()
+    selected_qs = retrieve_questions(img_ids, questions)
     retrieve_annotations(selected_qs)
 
     # download_images(img_ids, img_splits)

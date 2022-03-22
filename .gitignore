@@ -138,3 +138,4 @@ annotations/coco/person_keypoints_train2014.json
 annotations/coco/person_keypoints_val2014.json
 annotations/.DS_Store
 *.jpg
+annotations/vqacp_v2_test_questions.json
