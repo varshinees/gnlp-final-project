@@ -2,10 +2,10 @@
 A repo for our Spring 2022 GNLP final project, where we test common VQA models for racial/gender bias.
 ---
 ### Prereqs:
-You will need the following files downloaded to run these scripts:
+You will need the following files into folder `./annotations` downloaded to run these scripts:
 1. VQA Questions: https://computing.ece.vt.edu/~aish/vqacp/vqacp_v2_test_questions.json
 2. VQA Annotations: https://computing.ece.vt.edu/~aish/vqacp/vqacp_v2_test_annotations.json
-3. COCO Annotations: http://images.cocodataset.org/annotations/annotations_trainval2014.zip
+3. COCO Annotations: http://images.cocodataset.org/annotations/annotations_trainval2014.zip (unzip into folder `./annotations/coco`)
 
 ---
 ### How to activate the virtual environment

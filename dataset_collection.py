@@ -49,18 +49,37 @@ def retrieve_img_ids():
 Gets all the questions for each of these images and writes to a json file.
 Does not sort since we only need to do this once
 '''
-def retrieve_questions(img_ids):
+def retrieve_questions(img_ids, questions):
+    selected_questions = []
     for i in range(len(questions)):
         if any(img == questions['image_id'] for img in img_ids):
-            # we've picked this question, 
-            print("TBD")
+            # we've picked this question, store it
+            selected_questions.append(questions[i])
 
+    # write to json file
+    with open("test_questions.json", "w") as f:
+        json.dump(selected_questions, f)
+
+    return selected_questions
 
 
 '''
 Gets all the corresponding annotations for each of these questions and writes to a json file
 '''
+def retrieve_annotations(selected_questions):
+    f = open('./annotations/vqacp_v2_test_annotations.json')
+    annotations = json.load(f)
 
+    selected_annotations = []
+    for i in range(len(annotations)):
+        if any(selected_questions[i]['question_id'] == annotations['question_id'] 
+                for i in range(len(selected_questions))):
+            # we've picked this question, store it
+            selected_annotations.append(annotations[i])
+
+    # write to json file
+    with open("test_annotations.json", "w") as f:
+        json.dump(selected_annotations, f)
 
 
 '''
@@ -79,11 +98,11 @@ def download_images(img_ids, img_splits):
     # save the images to a local folder
     for im in images_train:
         img_data = requests.get(im['coco_url']).content
-        with open('./img/' + im['file_name'], 'wb') as handler: 
+        with open('./original_img/' + im['file_name'], 'wb') as handler: 
             handler.write(img_data)
     for im in images_val:
         img_data = requests.get(im['coco_url']).content
-        with open('./img/' + im['file_name'], 'wb') as handler: 
+        with open('./original_img/' + im['file_name'], 'wb') as handler: 
             handler.write(img_data)
  
     
@@ -97,7 +116,10 @@ if __name__ == "__main__":
     print("IDS", img_ids)
     print("SPLITS", img_splits)
 
-    download_images(img_ids, img_splits)
+    selected_qs = retrieve_questions()
+    retrieve_annotations(selected_qs)
+
+    # download_images(img_ids, img_splits)
     
 
 
