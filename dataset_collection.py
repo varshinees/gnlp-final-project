@@ -10,37 +10,33 @@ Gets the image IDs for images with people in them and writes them to a text file
 def generate_image_ids(questions):
     person_words = ["person", "people", "man ", "woman", "men ", "women", "children", "child"]
     img_ids = []
-    splits = []
 
     i = random.randint(0, len(questions) - 1)
     # pick out 150 images, with extras if we can't replace them manually
-    while len(img_ids) < 5:
+    while len(img_ids) < 150:
         if (any(word in questions[i]["question"] for word in person_words) 
                 and questions[i]["image_id"] not in img_ids):
-            img_ids.append(questions[i]["image_id"])
-            splits.append(questions[i]['coco_split'])
+            img_ids.append({
+                'image_id': questions[i]["image_id"], 
+                'split': questions[i]['coco_split']
+                })
+
             print(questions[i]["question"], questions[i]["image_id"])
 
         i = random.randint(0, len(questions) - 1)
 
-    with open('image_ids.txt', 'w') as img_file:
-        for img in img_ids:
-            img_file.write(str(img) + " ")
-        img_file.write("\n")
-
-        for split in splits:
-            img_file.write(split + " ")
+    with open('image_ids.json', 'w') as img_file:
+        json.dump(img_ids, img_file)
 
 '''
 Retrieves the image ids from a text file
 '''
 def retrieve_img_ids():
-    with open("image_ids.txt", 'r') as img_file:
-        img_ids = img_file.readline()
-        splits = img_file.readline()
-    
-    img_list = list(map(int, img_ids.split()))
-    split_list = splits.split()
+    img_file = open("image_ids.json", 'r')
+    images = json.load(img_file)   
+
+    img_list = [img['image_id'] for img in images]   
+    split_list = [img['split'] for img in images]  
     
     return img_list, split_list
         
@@ -113,13 +109,12 @@ if __name__ == "__main__":
 
     generate_image_ids(questions) # comment this out if text file already created
     img_ids, img_splits = retrieve_img_ids()
-    print("IDS", img_ids)
-    print("SPLITS", img_splits)
+    download_images(img_ids, img_splits)
 
+    # comment this in once images have been curated
     selected_qs = retrieve_questions(img_ids, questions)
-    retrieve_annotations(selected_qs)
+    # retrieve_annotations(selected_qs)
 
-    # download_images(img_ids, img_splits)
     
 
 
