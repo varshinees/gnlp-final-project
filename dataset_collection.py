@@ -2,6 +2,7 @@ import json
 import random
 from pycocotools.coco import COCO
 import requests
+import os
 
 
 '''
@@ -13,7 +14,7 @@ def generate_image_ids(questions):
 
     i = random.randint(0, len(questions) - 1)
     # pick out 150 images, with extras if we can't replace them manually
-    while len(img_ids) < 150:
+    while len(img_ids) < 1100:
         if (any(word in questions[i]["question"] for word in person_words) 
                 and questions[i]["image_id"] not in img_ids):
             img_ids.append({
@@ -31,8 +32,8 @@ def generate_image_ids(questions):
 '''
 Retrieves the image ids from a text file
 '''
-def retrieve_img_ids():
-    img_file = open("image_ids.json", 'r')
+def retrieve_img_ids(image_path):
+    img_file = open(image_path, 'r')
     images = json.load(img_file)   
 
     img_list = [img['image_id'] for img in images]   
@@ -101,18 +102,39 @@ def download_images(img_ids, img_splits):
         with open('./original_img/' + im['file_name'], 'wb') as handler: 
             handler.write(img_data)
  
+'''
+Generates the image ids from a given folder
+'''
+def generate_image_ids_from_folder(folder_path, output_path):
+    directory = os.fsencode(folder_path)
+    output_dict = []
+    for file in os.listdir(directory):
+        filename = os.fsdecode(file)
+        if filename.endswith(".jpg"): 
+            file_parts = filename[:-4].split('_')
+            split = file_parts[1]
+            id = int(file_parts[2])
+            output_dict.append({"image_id": id, "split": split})
+        else:
+            continue
     
-if __name__ == "__main__":
-    # Opening JSON file
-    f = open('./annotations/vqacp_v2_test_questions.json')
-    questions = json.load(f)
+    #write to json file
+    with open(output_path, "w") as f:
+        json.dump(output_dict, f)
+    
 
-    generate_image_ids(questions) # comment this out if text file already created
-    img_ids, img_splits = retrieve_img_ids()
-    download_images(img_ids, img_splits)
+if __name__ == "__main__":
+    # # Opening JSON file
+    # f = open('./annotations/vqacp_v2_test_questions.json')
+    # questions = json.load(f)
+
+    # generate_image_ids(questions) # comment this out if text file already created
+    # generate_image_ids_from_folder("./original_img", "test_image_ids.json")
+    # img_ids, img_splits = retrieve_img_ids("image_ids.json")
+    # download_images(img_ids, img_splits)
 
     # comment this in once images have been curated
-    selected_qs = retrieve_questions(img_ids, questions)
+    # selected_qs = retrieve_questions(img_ids, questions)
     # retrieve_annotations(selected_qs)
 
     
