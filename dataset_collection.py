@@ -125,8 +125,8 @@ def generate_image_ids_from_folder(folder_path, output_path):
 
 if __name__ == "__main__":
     # # Opening JSON file
-    # f = open('./annotations/vqacp_v2_test_questions.json')
-    # questions = json.load(f)
+    f = open('./annotations/vqacp_v2_test_questions.json')
+    questions = json.load(f)
 
     # generate_image_ids(questions) # comment this out if text file already created
     # generate_image_ids_from_folder("./original_img", "test_image_ids.json")
@@ -136,6 +136,9 @@ if __name__ == "__main__":
     # comment this in once images have been curated
     # selected_qs = retrieve_questions(img_ids, questions)
     # retrieve_annotations(selected_qs)
+    
+    # TODO: Change the generate_image_ids method to read test_image_ids.json and generate images not in there
+
 
     
 
