@@ -46,7 +46,7 @@ def retrieve_img_ids(image_path):
 Gets all the questions for each of these images and writes to a json file.
 Does not sort since we only need to do this once
 '''
-def retrieve_questions(img_ids, questions):
+def retrieve_questions(img_ids, questions, file_name="test_questions.json"):
     selected_questions = []
     for i in range(len(questions)):
         if any(img == questions[i]['image_id'] for img in img_ids):
@@ -54,7 +54,7 @@ def retrieve_questions(img_ids, questions):
             selected_questions.append(questions[i])
 
     # write to json file
-    with open("test_questions.json", "w") as f:
+    with open(file_name, "w") as f:
         json.dump(selected_questions, f)
 
     return selected_questions
@@ -63,7 +63,7 @@ def retrieve_questions(img_ids, questions):
 '''
 Gets all the corresponding annotations for each of these questions and writes to a json file
 '''
-def retrieve_annotations(selected_questions):
+def retrieve_annotations(selected_questions, file_name="test_annotations.json"):
     f = open('./annotations/vqacp_v2_test_annotations.json')
     annotations = json.load(f)
 
@@ -75,7 +75,7 @@ def retrieve_annotations(selected_questions):
             selected_annotations.append(annotations[i])
 
     # write to json file
-    with open("test_annotations.json", "w") as f:
+    with open(file_name, "w") as f:
         json.dump(selected_annotations, f)
 
 
@@ -121,7 +121,24 @@ def generate_image_ids_from_folder(folder_path, output_path):
     #write to json file
     with open(output_path, "w") as f:
         json.dump(output_dict, f)
-    
+
+
+'''
+Counts proportion of people-based questions in the full dataset
+'''
+def select_people_questions(questions):
+    person_words = ["person", "people", "man ", "woman", "men ", "women", "children", "child"]
+    selected_qs = []
+
+    # pick out 150 images, with extras if we can't replace them manually
+    for q in questions:
+        if (any(word in q["question"] for word in person_words) 
+                and q["image_id"] not in selected_qs):
+            selected_qs.append(q)
+
+    print(len(selected_qs) / len(questions))
+    return selected_qs
+
 
 if __name__ == "__main__":
     # # Opening JSON file
@@ -129,15 +146,16 @@ if __name__ == "__main__":
     questions = json.load(f)
 
     # generate_image_ids(questions) # comment this out if text file already created
-    # generate_image_ids_from_folder("./original_img", "test_image_ids.json")
-    # img_ids, img_splits = retrieve_img_ids("image_ids.json")
+    # generate_image_ids_from_folder("./other_races_imgs", "nonwhite_image_ids.json")
+    # img_ids, img_splits = retrieve_img_ids("nonwhite_image_ids.json")
     # download_images(img_ids, img_splits)
 
     # comment this in once images have been curated
-    # selected_qs = retrieve_questions(img_ids, questions)
-    # retrieve_annotations(selected_qs)
+    # selected_qs = retrieve_questions(img_ids, questions, "nonwhite_questions.json")
+    selected_qs = select_people_questions(questions)
+    retrieve_annotations(selected_qs, "all_people_annotations.json")
     
-    # TODO: Change the generate_image_ids method to read test_image_ids.json and generate images not in there
+    # TODO: Change the generate_image_ids method to read test_image_ids.json and generate images not in there to gather more data
 
 
     
