@@ -1,6 +1,9 @@
 from __future__ import annotations
+from cmath import exp
 import json
 import matplotlib.pyplot as plt
+import numpy as np
+from scipy.stats import chi2_contingency
 
 '''
 Generates the breakdown for number of questions per question type
@@ -8,7 +11,9 @@ colors = a dictionary with the output of a previous call to generate_question_co
 '''
 def generate_question_counts(annotations, colors=None):
     question_types = {}
-    COLORS = ['#e6194B', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#42d4f4', '#f032e6', '#bfef45', '#fabed4', '#469990', '#dcbeff', '#9A6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1', '#000075', '#a9a9a9', '#ffffff', '#000000']
+    COLORS = ['#e6194B', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#42d4f4', '#f032e6', 
+              '#bfef45', '#fabed4', '#469990', '#dcbeff', '#9A6324', '#fffac8', '#800000', '#aaffc3', 
+              '#808000', '#ffd8b1', '#000075', '#a9a9a9', '#ffffff', '#000000']
     color_index = 0
     for annotation in annotations:
         if annotation['question_type'] in question_types:
@@ -64,23 +69,56 @@ def create_pie_chart(question_types: dict[str, int]):
     plt.show()
     
 def create_histogram(dataset1: dict[str, int], dataset2: dict[str, int]):
-    n_bins = 10
     NUM_TO_KEEP = 15
-    sorted_types = [{"type": q, "count": c[0], "color": c[1]} for q,c in dataset1.items()]
-    sorted_types.sort(key=lambda x: x["count"], reverse=True)
-    other_count = sum(x["count"] for x in sorted_types[NUM_TO_KEEP:])
-    sorted_types = sorted_types[0:NUM_TO_KEEP]
-    
-    sorted_types2 = [{"type": q, "count": c[0], "color": c[1]} for q,c in dataset2.items()]
-    sorted_types2.sort(key=lambda x: x["count"], reverse=True)
-    other_count2 = sum(x["count"] for x in sorted_types2[NUM_TO_KEEP:])
-    sorted_types2 = sorted_types2[0:NUM_TO_KEEP]
+    sum1 = sum(c[0] for _,c in dataset1.items())
+    sum2 = sum(c[0] for _,c in dataset2.items())
 
-    questions_1 = [str(k['type']) for k in sorted_types]
-    questions_2 = [str(k['type']) for k in sorted_types2]
+    sorted_types = [{"type": q, "count": c[0] / sum1} for q,c in dataset1.items()]
+    sorted_types.sort(key=lambda x: x["count"], reverse=True)
     
-    plt.hist([questions_1, questions_2], n_bins)
-    plt.show()
+    sorted_types2 = []
+    for t in sorted_types:
+        if t['type'] in dataset2:
+            # the question is in both datasets
+            sorted_types2.append({"type": t['type'], "count": dataset2[t['type']][0] / sum2})
+        else:
+            # the question is in the first dataset but not the second
+            sorted_types2.append({"type": t['type'], "count": 0}) 
+
+    # add the questions in the second dataset but not the first
+    new_questions = list(filter(lambda x: x[0] not in (t['type'] for t in sorted_types), dataset2.items()))
+    sorted_types2.extend({"type": q, "count": c[0] / sum2} for q,c in new_questions)
+    sorted_types.extend({"type": q, "count": 0} for q,_ in new_questions)
+
+    w = 0.3
+    x = np.arange(15)
+    bar_plot = plt.subplot(111)
+    b1 = bar_plot.bar(x, tick_label=[t["type"] for t in sorted_types[:NUM_TO_KEEP]], 
+                 height = [t["count"] for t in sorted_types[:NUM_TO_KEEP]], color='brown', align='center', width=w)
+    b2 = bar_plot.bar(x+w, tick_label=[t["type"] for t in sorted_types2[:NUM_TO_KEEP]], 
+                 height = [t["count"] for t in sorted_types2[:NUM_TO_KEEP]], color='b', align='center', width=w)
+    
+    plt.xticks(rotation=20, ha='right')
+    bar_plot.legend((b1, b2), ('questions for all people images', 'questions for white images'), loc='upper right')
+    bar_plot.set_ylabel('percentage of all question types')
+    # plt.show()
+
+    return sorted_types, sorted_types2, sum1, sum2
+
+'''
+Conducts the chi-squared test on the two distributions
+Parameters are arrays that are outputted from create_histogram()
+
+'''
+def calculate_chisquare(expected, observed, exp_sum, obs_sum):
+    np.seterr(divide='ignore', invalid='ignore')
+    obs = list(map(lambda x: x * obs_sum, [item['count'] for item in observed]))
+    exp = list(map(lambda x: x * exp_sum, [item['count'] for item in expected]))
+    
+    print("Sizes: ", len(obs), len(exp))
+    stat, p, dof, expected_vals = chi2_contingency([obs, exp])
+    print(stat, p)
+
     
 if __name__ == "__main__":
     # # Opening JSON file
@@ -88,18 +126,18 @@ if __name__ == "__main__":
     all_annotations = json.load(f)
     total_types = generate_question_counts(all_annotations)
 
-    # people_annotations = json.load('./all_people_annotations.json')
-    # people_types = generate_question_counts(people_annotations, all_annotations)
+    people_annotations = json.load(open('./all_people_annotations.json'))
+    people_types = generate_question_counts(people_annotations, total_types)
 
     white_annotations = json.load(open('./white_annotations.json'))
-    white_types = generate_question_counts(white_annotations, all_annotations)
+    white_types = generate_question_counts(white_annotations, total_types)
     
     nonwhite_annotations = json.load(open('./nonwhite_annotations.json'))
     nonwhite_types = generate_question_counts(nonwhite_annotations, white_types)
     
-
-    create_pie_chart(total_types)
-    # create_histogram(white_types, nonwhite_types)
+    # create_pie_chart(nonwhite_types)
+    expected, observed, exp_sum, obs_sum = create_histogram(nonwhite_types, white_types)
+    calculate_chisquare(expected, observed, exp_sum, obs_sum)
     # print(generate_balanced_subset())
 
 

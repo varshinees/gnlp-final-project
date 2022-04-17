@@ -1,2 +1,3 @@
 pycocotools
 requests
+scipy
