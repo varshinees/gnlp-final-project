@@ -139,3 +139,8 @@ annotations/coco/person_keypoints_val2014.json
 annotations/.DS_Store
 *.jpg
 annotations/vqacp_v2_test_questions.json
+
+white_imgs
+other_races_imgs
+to_trash_mixed_race
+gvqa_results.json
