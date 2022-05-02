@@ -1,9 +1,15 @@
 import json
 import random
+from bisect import bisect_left
 from pycocotools.coco import COCO
 import requests
 import os
 
+def binary_search(arr, tgt):
+    i = bisect_left(arr, tgt)
+    if i != len(arr) and arr[i] == tgt:
+        return i
+    return -1
 
 '''
 Gets the image IDs for images with people in them and writes them to a text file
@@ -146,14 +152,14 @@ if __name__ == "__main__":
     questions = json.load(f)
 
     # generate_image_ids(questions) # comment this out if text file already created
-    # generate_image_ids_from_folder("./other_races_imgs", "nonwhite_image_ids.json")
-    # img_ids, img_splits = retrieve_img_ids("nonwhite_image_ids.json")
+    # generate_image_ids_from_folder("./white_imgs", "white_image.json")
+    img_ids, img_splits = retrieve_img_ids("./annotations/image_ids/white_image_ids.json")
     # download_images(img_ids, img_splits)
 
     # comment this in once images have been curated
-    # selected_qs = retrieve_questions(img_ids, questions, "nonwhite_questions.json")
-    selected_qs = select_people_questions(questions)
-    retrieve_annotations(selected_qs, "all_people_annotations.json")
+    selected_qs = retrieve_questions(img_ids, questions, "./annotations/subset_questions/white_questions.json")
+    # selected_qs = select_people_questions(questions)
+    retrieve_annotations(selected_qs, "./annotations/subset_annotations/white_annotations.json")
     
     # TODO: Change the generate_image_ids method to read test_image_ids.json and generate images not in there to gather more data
 

@@ -4,6 +4,7 @@ import json
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import chi2_contingency
+from scipy.stats import mannwhitneyu
 
 '''
 Generates the breakdown for number of questions per question type
@@ -94,12 +95,12 @@ def create_histogram(dataset1: dict[str, int], dataset2: dict[str, int]):
     x = np.arange(15)
     bar_plot = plt.subplot(111)
     b1 = bar_plot.bar(x, tick_label=[t["type"] for t in sorted_types[:NUM_TO_KEEP]], 
-                 height = [t["count"] for t in sorted_types[:NUM_TO_KEEP]], color='brown', align='center', width=w)
+                 height = [t["count"] for t in sorted_types[:NUM_TO_KEEP]], color='black', align='center', width=w)
     b2 = bar_plot.bar(x+w, tick_label=[t["type"] for t in sorted_types2[:NUM_TO_KEEP]], 
-                 height = [t["count"] for t in sorted_types2[:NUM_TO_KEEP]], color='b', align='center', width=w)
+                 height = [t["count"] for t in sorted_types2[:NUM_TO_KEEP]], color='green', align='center', width=w)
     
     plt.xticks(rotation=20, ha='right')
-    bar_plot.legend((b1, b2), ('questions for all people images', 'questions for white images'), loc='upper right')
+    bar_plot.legend((b1, b2), ('questions for mixed/unknown images', 'questions for nonwhite images'), loc='upper right')
     bar_plot.set_ylabel('percentage of all question types')
     # plt.show()
 
@@ -117,7 +118,10 @@ def calculate_chisquare(expected, observed, exp_sum, obs_sum):
     
     print("Sizes: ", len(obs), len(exp))
     stat, p, dof, expected_vals = chi2_contingency([obs, exp])
-    print(stat, p)
+    print("Chi2:", stat, p)
+
+    u_res = mannwhitneyu(obs, exp)
+    print("U Test:", u_res.statistic, u_res.pvalue)
 
     
 if __name__ == "__main__":
@@ -126,17 +130,20 @@ if __name__ == "__main__":
     all_annotations = json.load(f)
     total_types = generate_question_counts(all_annotations)
 
-    people_annotations = json.load(open('./all_people_annotations.json'))
-    people_types = generate_question_counts(people_annotations, total_types)
+    # people_annotations = json.load(open('./all_people_annotations.json'))
+    # people_types = generate_question_counts(people_annotations, total_types)
 
     white_annotations = json.load(open('./white_annotations.json'))
     white_types = generate_question_counts(white_annotations, total_types)
     
     nonwhite_annotations = json.load(open('./nonwhite_annotations.json'))
     nonwhite_types = generate_question_counts(nonwhite_annotations, white_types)
-    
+
+    mixed_annotations = json.load(open('./mixed_annotations.json'))
+    mixed_types = generate_question_counts(mixed_annotations, white_types)
+
     # create_pie_chart(nonwhite_types)
-    expected, observed, exp_sum, obs_sum = create_histogram(nonwhite_types, white_types)
+    expected, observed, exp_sum, obs_sum = create_histogram(mixed_types, white_types)
     calculate_chisquare(expected, observed, exp_sum, obs_sum)
     # print(generate_balanced_subset())
 
