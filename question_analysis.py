@@ -68,41 +68,49 @@ def create_pie_chart(question_types: dict[str, int]):
     plt.setp(autopcts, **{'fontsize':8})
     plt.axis('equal')
     plt.show()
-    
-def create_histogram(dataset1: dict[str, int], dataset2: dict[str, int]):
-    NUM_TO_KEEP = 15
-    sum1 = sum(c[0] for _,c in dataset1.items())
-    sum2 = sum(c[0] for _,c in dataset2.items())
 
-    sorted_types = [{"type": q, "count": c[0] / sum1} for q,c in dataset1.items()]
+'''
+datasets: {question_type: {count, percentage}}
+''' 
+def create_histogram(dataset1: dict[str, int], dataset2: dict[str, int], label1: str, label2: str, color1: str, color2: str):
+    NUM_TO_KEEP = 15
+    # sum1 = sum(c[0] for _,c in dataset1.items())
+    # sum2 = sum(c[0] for _,c in dataset2.items())
+    sum1 = 1
+    sum2 = 1
+
+    sorted_types = [{"type": q, "count": c[0] / sum1, "accuracy": c[1]} for q,c in dataset1.items()]
+    # sorts the questions
     sorted_types.sort(key=lambda x: x["count"], reverse=True)
     
     sorted_types2 = []
     for t in sorted_types:
         if t['type'] in dataset2:
             # the question is in both datasets
-            sorted_types2.append({"type": t['type'], "count": dataset2[t['type']][0] / sum2})
-        else:
-            # the question is in the first dataset but not the second
-            sorted_types2.append({"type": t['type'], "count": 0}) 
+            sorted_types2.append({"type": t['type'], "count": dataset2[t['type']][0] / sum2, 
+                                    "accuracy": dataset2[t['type']][1]})
+    #     else:
+    #         # the question is in the first dataset but not the second
+    #         sorted_types2.append({"type": t['type'], "count": 0, "accuracy": 0}) 
 
-    # add the questions in the second dataset but not the first
-    new_questions = list(filter(lambda x: x[0] not in (t['type'] for t in sorted_types), dataset2.items()))
-    sorted_types2.extend({"type": q, "count": c[0] / sum2} for q,c in new_questions)
-    sorted_types.extend({"type": q, "count": 0} for q,_ in new_questions)
+    # # add the questions in the second dataset but not the first
+    # new_questions = list(filter(lambda x: x[0] not in (t['type'] for t in sorted_types), dataset2.items()))
+    # sorted_types2.extend({"type": q, "count": c[0] / sum2, "accuracy": c[1]} for q,c in new_questions)
+    # sorted_types.extend({"type": q, "count": 0, "accuracy": 0} for q,_ in new_questions)
 
     w = 0.3
     x = np.arange(15)
     bar_plot = plt.subplot(111)
     b1 = bar_plot.bar(x, tick_label=[t["type"] for t in sorted_types[:NUM_TO_KEEP]], 
-                 height = [t["count"] for t in sorted_types[:NUM_TO_KEEP]], color='brown', align='center', width=w)
+                 height = [t["accuracy"] for t in sorted_types[:NUM_TO_KEEP]], color=color1, align='center', width=w)
     b2 = bar_plot.bar(x+w, tick_label=[t["type"] for t in sorted_types2[:NUM_TO_KEEP]], 
-                 height = [t["count"] for t in sorted_types2[:NUM_TO_KEEP]], color='b', align='center', width=w)
+                 height = [t["accuracy"] for t in sorted_types2[:NUM_TO_KEEP]], color=color2, align='center', width=w)
     
     plt.xticks(rotation=20, ha='right')
-    bar_plot.legend((b1, b2), ('questions for all people images', 'questions for white images'), loc='upper right')
+    bar_plot.set_title("GVQA Accuracies by Question Type")
+    bar_plot.legend((b1, b2), (label1, label2), loc='upper right')
     bar_plot.set_ylabel('percentage of all question types')
-    plt.show()
+    # plt.show()
 
     return sorted_types, sorted_types2, sum1, sum2
 
