@@ -32,6 +32,26 @@ def generate_question_counts(annotations, colors=None):
 
     return question_types
 
+def generate_answer_counts(annotations, colors=None):
+    answer_types = {}
+    COLORS = ['#e6194B', '#3cb44b', '#ffe119']
+    color_index = 0
+    for annotation in annotations:
+        if annotation['answer_type'] in answer_types:
+            count = answer_types[annotation['answer_type']][0]
+            color = answer_types[annotation['answer_type']][1]
+            answer_types[annotation['answer_type']] = (count + 1, color)
+        elif colors is None or annotation['answer_type'] not in colors:
+            # assign a random color
+            rand_color = COLORS[color_index]
+            answer_types[annotation['answer_type']] = (1, rand_color)
+            color_index = (color_index + 1) % len(COLORS)
+        else:
+            # get color from colors dict
+            answer_types[annotation['answer_type']] = (1, colors[annotation['answer_type']][1])
+
+    return answer_types
+
 '''
 Outputs a json with the question ids for the subset, having balanced to match the full dataset
 '''
@@ -89,14 +109,14 @@ def create_histogram(dataset1: dict[str, int], dataset2: dict[str, int], label1:
             # the question is in both datasets
             sorted_types2.append({"type": t['type'], "count": dataset2[t['type']][0] / sum2, 
                                     "accuracy": dataset2[t['type']][1]})
-    #     else:
-    #         # the question is in the first dataset but not the second
-    #         sorted_types2.append({"type": t['type'], "count": 0, "accuracy": 0}) 
+        else:
+            # the question is in the first dataset but not the second
+            sorted_types2.append({"type": t['type'], "count": 0, "accuracy": 0}) 
 
-    # # add the questions in the second dataset but not the first
-    # new_questions = list(filter(lambda x: x[0] not in (t['type'] for t in sorted_types), dataset2.items()))
-    # sorted_types2.extend({"type": q, "count": c[0] / sum2, "accuracy": c[1]} for q,c in new_questions)
-    # sorted_types.extend({"type": q, "count": 0, "accuracy": 0} for q,_ in new_questions)
+    # add the questions in the second dataset but not the first
+    new_questions = list(filter(lambda x: x[0] not in (t['type'] for t in sorted_types), dataset2.items()))
+    sorted_types2.extend({"type": q, "count": c[0] / sum2, "accuracy": c[1]} for q,c in new_questions)
+    sorted_types.extend({"type": q, "count": 0, "accuracy": 0} for q,_ in new_questions)
 
     w = 0.3
     x = np.arange(15)
