@@ -55,21 +55,25 @@ def generate_answer_counts(annotations, colors=None):
 '''
 Outputs a json with the question ids for the subset, having balanced to match the full dataset
 '''
-def generate_balanced_subset(total_types, total_sum, subset_types, subset_sum):
+# TODO: What if a question type doesn't exist in the subset dataset? Can we balance just the top 15 or so questions?
+def generate_balanced_subset(total_types, total_annotations, subset_types):
     TARGET_SIZE = 0.5
+    total_sum = sum(counts[0] for _, counts, in total_types.items())
+    subset_sum = sum(counts[0] for _, counts, in subset_types.items())
+    print(subset_types)
     # how many questions of each type do we want?
-    target_counts = {question_type: (question_count / total_sum) * subset_sum * TARGET_SIZE 
-                    for question_type, question_count in total_types.items() }
-
-    subset_questions = json.load(open('./test_annotations.json'))
+    target_counts = {question_type: int((subset_types[question_type][0] / subset_sum) * total_sum * TARGET_SIZE) 
+                    for question_type, _ in total_types.items() }
+    
     questions_to_keep = []
-    for question in subset_questions:
+    for question in total_annotations:
         if target_counts[question['question_type']] > 0:
             questions_to_keep.append(question['question_id'])
             target_counts[question['question_type']] -= 1
     
-     #write to json file, change the "white"
-    with open("subset_questions_white", "w") as f:
+    print(target_counts)
+    #write to json file, change the "white"
+    with open("test.json", "w") as f:
         json.dump(questions_to_keep, f)
 
 '''
@@ -92,7 +96,46 @@ def create_pie_chart(question_types: dict[str, int]):
 '''
 datasets: {question_type: {count, percentage}}
 ''' 
-def create_histogram(dataset1: dict[str, int], dataset2: dict[str, int], label1: str, label2: str, color1: str, color2: str):
+def create_histogram_dataset(dataset1: dict[str, int], dataset2: dict[str, int]):
+    NUM_TO_KEEP = 3
+    sum1 = sum(c[0] for _,c in dataset1.items())
+    sum2 = sum(c[0] for _,c in dataset2.items())
+
+    sorted_types = [{"type": q, "count": c[0] / sum1} for q,c in dataset1.items()]
+    sorted_types.sort(key=lambda x: x["count"], reverse=True)
+    
+    sorted_types2 = []
+    for t in sorted_types:
+        if t['type'] in dataset2:
+            # the question is in both datasets
+            sorted_types2.append({"type": t['type'], "count": dataset2[t['type']][0] / sum2})
+        else:
+            # the question is in the first dataset but not the second
+            sorted_types2.append({"type": t['type'], "count": 0}) 
+
+    # add the questions in the second dataset but not the first
+    new_questions = list(filter(lambda x: x[0] not in (t['type'] for t in sorted_types), dataset2.items()))
+    sorted_types2.extend({"type": q, "count": c[0] / sum2} for q,c in new_questions)
+    sorted_types.extend({"type": q, "count": 0} for q,_ in new_questions)
+
+    w = 0.3
+    x = np.arange(3)
+    bar_plot = plt.subplot(111)
+    b1 = bar_plot.bar(x, tick_label=[t["type"] for t in sorted_types[:NUM_TO_KEEP]], 
+                 height = [t["count"] for t in sorted_types[:NUM_TO_KEEP]], color='b', align='center', width=w)
+    b2 = bar_plot.bar(x+w, tick_label=[t["type"] for t in sorted_types2[:NUM_TO_KEEP]], 
+                 height = [t["count"] for t in sorted_types2[:NUM_TO_KEEP]], color='green', align='center', width=w)
+    
+    plt.xticks(rotation=0, ha='right')
+    bar_plot.legend((b1, b2), ('answers for white images', 'answers for nonwhite images'), loc='upper right')
+    bar_plot.set_ylabel('proportion of full subset')
+    bar_plot.set_title("Answer Type Distribution")
+    # plt.show()
+
+    return sorted_types, sorted_types2, sum1, sum2
+
+
+def create_histogram_result(dataset1: dict[str, int], dataset2: dict[str, int], label1: str, label2: str, color1: str, color2: str):
     NUM_TO_KEEP = 15
     # sum1 = sum(c[0] for _,c in dataset1.items())
     # sum2 = sum(c[0] for _,c in dataset2.items())
@@ -134,6 +177,7 @@ def create_histogram(dataset1: dict[str, int], dataset2: dict[str, int], label1:
 
     return sorted_types, sorted_types2, sum1, sum2
 
+
 '''
 Conducts the chi-squared test on the two distributions
 Parameters are arrays that are outputted from create_histogram()
@@ -154,25 +198,28 @@ def calculate_chisquare(expected, observed, exp_sum, obs_sum):
     
 if __name__ == "__main__":
     # # Opening JSON file
-    f = open('./annotations/vqacp_v2_test_annotations.json')
-    all_annotations = json.load(f)
-    total_types = generate_question_counts(all_annotations)
+    # f = open('./annotations/vqacp_v2_test_annotations.json')
+    # all_annotations = json.load(f)
+    # total_types = generate_answer_counts(all_annotations)
 
-    people_annotations = json.load(open('./annotations/subset_annotations/people_annotations.json'))
-    people_types = generate_question_counts(people_annotations, total_types)
+    # people_annotations = json.load(open('./annotations/subset_annotations/people_annotations.json'))
+    # people_types = generate_answer_counts(people_annotations, total_types)
 
     white_annotations = json.load(open('./annotations/subset_annotations/white_annotations.json'))
-    white_types = generate_question_counts(white_annotations, total_types)
+    white_types = generate_question_counts(white_annotations)
     
-    # nonwhite_annotations = json.load(open('./annotations/subset_annotations/nonwhite_annotations.json'))
-    # nonwhite_types = generate_question_counts(nonwhite_annotations, white_types)
+    nonwhite_annotations = json.load(open('./annotations/subset_annotations/nonwhite_annotations.json'))
+    nonwhite_types = generate_question_counts(nonwhite_annotations, white_types)
 
-    # mixed_annotations = json.load(open('./mixed_annotations.json'))
-    # mixed_types = generate_question_counts(mixed_annotations, white_types)
-    print(len(people_annotations), len(people_annotations) / len(all_annotations))
-    # create_pie_chart(people_types)
-    expected, observed, exp_sum, obs_sum = create_histogram(people_types, white_types)
-    calculate_chisquare(expected, observed, exp_sum, obs_sum)
+    generate_balanced_subset(white_types, white_annotations, nonwhite_types)
+
+    # mixed_annotations = json.load(open('./annotations/subset_annotations/mixed_annotations.json'))
+    # mixed_types = generate_answer_counts(mixed_annotations, white_types)
+    # # print(len(people_annotations), len(people_annotations) / len(all_annotations))
+    # # create_pie_chart(people_types)
+    # print(white_types, nonwhite_types)
+    # expected, observed, exp_sum, obs_sum = create_histogram_dataset(white_types, mixed_types)
+    # calculate_chisquare(expected, observed, exp_sum, obs_sum)
     # print(generate_balanced_subset())
 
 
